@@ -5,7 +5,8 @@ import cookieParser from "cookie-parser";
 import { db } from './db.config.js';
 
 import { routerUsers } from './routes/user.route.js';
-
+import { routerCategories } from './routes/categorie.route.js';
+import { routermunicipalities } from './routes/municipalities.route.js';
 const app = express();
 
 app.use(cors({
@@ -18,6 +19,8 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use('/api/users', routerUsers);
+app.use('/api/categories', routerCategories);
+app.use('/api/municipalities', routermunicipalities)
 
 db.query('SELECT NOW()')
     .then(() => console.log('Database connected'))
