@@ -3,6 +3,7 @@ import { webToken } from "../middleware/webToken.middleware.js";
 import axios from "axios";
 import 'dotenv/config'
 import bcrypt from 'bcryptjs';
+import { pruebas } from "../services/ia.services.js";
 
 const userCtrl = {};
 
@@ -16,23 +17,26 @@ userCtrl.loginUsers = async (req, res) => {
             return res.status(400).json({ msg: "Contraseña incorrecta" });
         }
 
-        const response = await axios.post(`https://api-sandbox.factus.com.co/oauth/token`, {
-            client_id: process.env.CLIENT_ID,
-            client_secret: process.env.CLIENT_SECRET,
-            grant_type: 'password',
-            username: process.env.USERNAME,
-            password: process.env.password,
-        }, {
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-        const access_token = response.data.access_token
+        // const response = await axios.post(`https://api-sandbox.factus.com.co/oauth/token`, {
+        //     client_id: process.env.CLIENT_ID,
+        //     client_secret: process.env.CLIENT_SECRET,
+        //     grant_type: 'password',
+        //     username: `sandbox@factus.com.co`,
+        //     password: `sandbox2024%`,
+        // }, {
+        //     headers: {
+        //         'Content-Type': 'application/json'
+        //     }
+        // })
+        // const access_token = response.data.access_token
 
-        const refresh_token = response.data.refresh_token
-        const expires_in = Date.now() + (response.data.expires_in * 1000)
 
-        await db.query(`UPDATE users SET access_token = $1, refresh_token = $2, expires_in = $3 WHERE id = ${user.id}`, [access_token, refresh_token, expires_in])
+        // const refresh_token = response.data.refresh_token
+        // const expires_in = Date.now() + (response.data.expires_in * 1000)
+
+
+
+        // await db.query(`UPDATE users SET access_token = $1, refresh_token = $2, expires_in = $3 WHERE id = ${user.id}`, [access_token, refresh_token, expires_in])
 
 
         const token = await webToken.generateJwt(user)
@@ -65,7 +69,7 @@ userCtrl.getUsers = async (req, res) => {
         }
 
         if (search) {
-            filter.push(`u.first_name ILIKE $${params.length + 1} OR u.document_number ILIKE $${params.length + 1}`)
+            filter.push(`(u.first_name ILIKE $${params.length + 1} OR u.document_number ILIKE $${params.length + 1})`)
             params.push(`${search}%`)
         }
 
@@ -87,6 +91,8 @@ userCtrl.getUsers = async (req, res) => {
 
         const users = await db.query(`SELECT u.first_name, u.last_name, u.email, u.role, u.status ${sql}`, params)
 
+        // await pruebas()
+
         res.json({ msg: { users: users.rows, totalRows: totalRows.rows[0].count } });
     } catch (error) {
         console.error(error);
@@ -96,16 +102,19 @@ userCtrl.getUsers = async (req, res) => {
 
 userCtrl.saveUsers = async (req, res) => {
     try {
-        const { document_number, first_name, last_name, phone, email, address, password, role, legal_organization_id, tribute_id, company, municipality_id, trade_name } = req.body
+        const { document_number, first_name, last_name, phone, email, address, password, role, legal_organization_id, tribute_id, company, municipality, trade_name } = req.body
+
+        console.log(municipality)
 
         const passwordHash = await bcrypt.hash(password, 10);
 
-        await db.query(`INSERT INTO users (document_number, first_name, last_name, email, address, phone, password, role, legal_organization_id, tribute_id, company, municipality_id, trade_name) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
-            [document_number, first_name, last_name, email, address, phone, passwordHash, role, legal_organization_id, tribute_id, company, municipality_id, trade_name])
+        await db.query(`INSERT INTO users (document_number, first_name, last_name, email, address, phone, password, role, legal_organization_id, tribute_id, company, municipality_id, trade_name, department, municipality) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+            [document_number, first_name, last_name, email, address, phone, passwordHash, role, legal_organization_id, tribute_id, company, municipality.id, trade_name, municipality.department, municipality.name])
 
         res.json({ msg: "Usuario Registrado Existosamente." });
     }
     catch (error) {
+        console.log(error)
         res.status(500).json({ msg: "Ha ocurrido un error en el servidor, Intenta mas tarde." });
     }
 }
