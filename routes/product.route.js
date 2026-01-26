@@ -17,6 +17,9 @@ routerProducts.post("/saveProducts", [
     valideFields
 ], productCtrl.saveProducts)
 
+routerProducts.post("/images", productCtrl.images)
+routerProducts.post("/deleteImages", productCtrl.deleteImage)
+
 routerProducts.put("/activeProducts/:id", [
     webToken.verifyJwt(),
 ], productCtrl.activeProducts)
