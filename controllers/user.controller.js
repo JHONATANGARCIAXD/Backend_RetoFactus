@@ -45,7 +45,7 @@ userCtrl.loginUsers = async (req, res) => {
             httpOnly: true,
             secure: true,
             sameSite: "none",
-            maxAge: 24 * 60 * 60 * 1000 // 1 día
+            maxAge: 24 * 60 * 60 * 1000, // 1 día
             path: "/"
         });
 
