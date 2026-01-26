@@ -43,8 +43,8 @@ userCtrl.loginUsers = async (req, res) => {
 
         res.cookie("auth", token, {
             httpOnly: true,
-            secure: true,
-            sameSite: "strict",
+            secure: false,
+            sameSite: "lax",
             maxAge: 24 * 60 * 60 * 1000 // 1 día
         });
 
