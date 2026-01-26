@@ -3,7 +3,7 @@ import { webToken } from "../middleware/webToken.middleware.js";
 import axios from "axios";
 import 'dotenv/config'
 import bcrypt from 'bcryptjs';
-import { pruebas } from "../services/ia.services.js";
+// import { pruebas } from "../services/ia.services.js";
 
 const userCtrl = {};
 
