@@ -43,9 +43,10 @@ userCtrl.loginUsers = async (req, res) => {
 
         res.cookie("auth", token, {
             httpOnly: true,
-            secure: false,
+            secure: true,
             sameSite: "none",
             maxAge: 24 * 60 * 60 * 1000 // 1 día
+            path: "/"
         });
 
         res.status(200).json({ msg: "Logueado Existosamente." });
