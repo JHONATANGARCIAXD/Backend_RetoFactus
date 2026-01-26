@@ -27,21 +27,22 @@ productCtrl.getProducts = async (req, res) => {
             params.push(categorie)
         }
 
-        let sql = `FROM products p LEFT JOIN product_categories pc ON pc.product_id = p.id LEFT JOIN categories c ON c.id = pc.categorie_id LEFT JOIN products_images pi ON p.id =  pi.product_id`
+        let sql = `FROM products p LEFT JOIN product_categories pc ON pc.product_id = p.id LEFT JOIN categories c ON c.id = pc.categorie_id LEFT JOIN products_images pi ON p.id = pi.product_id`
         if (filter.length > 0) {
             sql += ' WHERE ' + filter.join(` AND `)
         }
 
         const totalRows = await db.query(`SELECT (COUNT(DISTINCT p.id)::INT)  ${sql}`, params)
 
-        sql += ' GROUP BY p.id, pi.id'
+        sql += ' GROUP BY p.id'
         sql += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`
         const offset = (page - 1) * limit
         params.push(Number(limit), Number(offset))
 
-        const products = await db.query(`SELECT p.*, pi.id, ARRAY_AGG(c.name) AS categories, 
+        const products = await db.query(`SELECT p.*, ARRAY_AGG(c.name) AS categories, 
             ARRAY_AGG(
             jsonb_build_object(
+            'id', pi.id,
             'url_image', pi.url_image,
             'public_id', pi.public_id
         )) AS images ${sql}`, params)
@@ -125,37 +126,6 @@ productCtrl.inactiveProducts = async (req, res) => {
     }
 }
 
-productCtrl.images = async (req, res) => {
-    try {
-        const pathImgs = await uploadFile(req.files)
-
-        console.log(pathImgs)
-        const url = await cloudinaryService.uploadFiles(pathImgs)
-
-        console.log(url)
-        res.status(200).send("Paso")
-    }
-    catch (error) {
-        res.status(500).send("NO PASO")
-        console.log(error)
-
-    }
-}
-
-productCtrl.deleteImage = async (req, res) => {
-    try {
-        const { publicIds } = req.body
-        let resul = await cloudinaryService.deleteFiles(publicIds)
-
-        console.log(resul)
-
-        res.status(200).send("SE ELIMINARON")
-    }
-    catch (error) {
-        res.status(500).send("PAILAS NO SE ELIMINARON")
-    }
-}
-
 productCtrl.updateProducts = async (req, res) => {
     const client = await db.connect();
 
@@ -225,7 +195,6 @@ productCtrl.updateProducts = async (req, res) => {
         client.release();
     }
 };
-
 
 productCtrl.deleteProducts = async (req, res) => {
     try {
