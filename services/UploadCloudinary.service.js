@@ -20,8 +20,12 @@ cloudinaryService.uploadFiles = async (nameFiles) => {
 
         for (const fileName of nameFiles) {
             const filePath = path.join(__dirname, "../uploads/", fileName);
-            const result = await cloudinary.uploader.upload(filePath)
+            const result = await cloudinary.uploader.upload(filePath, {
+                folder: '/products'
+            })
             pathCloudinary.push(result)
+
+            fs.unlinkSync(filePath)
         }
 
         return { ok: true, pathCloudinary }

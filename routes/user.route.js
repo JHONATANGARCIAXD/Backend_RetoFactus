@@ -8,7 +8,7 @@ import { webToken } from "../middleware/webToken.middleware.js";
 const routerUsers = Router();
 
 routerUsers.post('/loginUsers', [
-    check('document_number').notEmpty().withMessage('El nombre de usuario es obligatorio').custom(userHelper.notExistUser),
+    check('email').notEmpty().withMessage('El nombre de usuario es obligatorio').custom(userHelper.notExistUser),
     check('password').notEmpty().withMessage('La contraseña es obligatoria'),
     valideFields
 ], userCtrl.loginUsers);
