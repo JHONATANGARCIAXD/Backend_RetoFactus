@@ -26,11 +26,10 @@ const uploadFile = async (files, validExtensions = ['png', 'jpg', 'jpeg']) => {
             await new Promise((resolve, reject) => {
                 file.mv(uploadPath, (err) => {
                     if (err) reject(err);
-                    else resolve();
+                    else resolve( savedNames.push(tempName));
                 });
             });
 
-            savedNames.push(tempName)
         }
 
         return savedNames;

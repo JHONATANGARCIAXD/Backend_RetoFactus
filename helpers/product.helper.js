@@ -28,5 +28,12 @@ productHelper.valideProduct = async (products) => {
 
 }
 
+productHelper.existProduct = async (id) => {
+    const product = await db.query(`SELECT EXISTS (SELECT p.id FROM products p WHERE p.id = $1) `, [id])
+
+    if (!product.rows[0].exist) {
+        throw new Error("El producto no existe")
+    }
+}
 
 export { productHelper };

@@ -62,16 +62,16 @@ productCtrl.saveProducts = async (req, res) => {
     try {
         const { code_reference, name, price, categories, stock, unit_measure_id, standard_code_id, tax_rate, tribute_id, is_excluded } = req.body
 
-        const nameFiles = await uploadFile(req.files)
+        const nameFiles = await uploadFile(req.files, ['png', 'jpg', 'jpeg'])
 
         if (nameFiles.ok == false) {
-            return res.status(500).json({ msg: "Error al subir los archivos" })
+            return res.status(500).json({ msg: nameFiles.msg })
         }
 
         let urlFiles = await cloudinaryService.uploadFiles(nameFiles)
 
         if (urlFiles.ok == false) {
-            return res.status(500).json({ msg: "Error al subir los archivos a la nube" })
+            return res.status(500).json({ msg: urlFiles.msg })
         }
 
         urlFiles = urlFiles.pathCloudinary.map(files => {
@@ -275,7 +275,6 @@ productCtrl.updateProducts = async (req, res) => {
         client.release();
     }
 };
-
 
 productCtrl.deleteProducts = async (req, res) => {
     try {

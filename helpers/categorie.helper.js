@@ -9,7 +9,6 @@ categorieHelper.existCategorie = async (categories) => {
     if(valide.rows[0].all_exist == false){
         throw new Error(`Hay categorias que no existen`)
     }
-} 
-
+}
 
 export {categorieHelper}
