@@ -39,13 +39,16 @@ productCtrl.getProducts = async (req, res) => {
         const offset = (page - 1) * limit
         params.push(Number(limit), Number(offset))
 
-        const products = await db.query(`SELECT p.*, ARRAY_AGG(c.name) AS categories, 
-            ARRAY_AGG(
-            jsonb_build_object(
-            'id', pi.id,
-            'url_image', pi.url_image,
-            'public_id', pi.public_id
-        )) AS images ${sql}`, params)
+        const products = await db.query(`SELECT p.*, ARRAY_AGG(DISTINCT c.name) AS categories, 
+            COALESCE(
+                ARRAY_AGG(
+                jsonb_build_object(
+                'id', pi.id,
+                'url_image', pi.url_image,
+                'public_id', pi.public_id)) 
+            FILTER (WHERE pi.id IS NOT NULL),
+            ARRAY[]::jsonb[] 
+            ) AS images ${sql}`, params)
 
         res.status(200).json({ msg: { products: products.rows, totalRows: totalRows.rows[0].count } })
     }
@@ -131,24 +134,59 @@ productCtrl.updateProducts = async (req, res) => {
 
     try {
         const { id } = req.params;
-        const { name, price, stock, unit_measure_id, standard_code_id, tax_rate, tribute_id, is_excluded, categories // <-- array de IDs
+        const {
+            name,
+            price,
+            stock,
+            unit_measure_id,
+            standard_code_id,
+            tax_rate,
+            tribute_id,
+            is_excluded,
+            categories,
         } = req.body;
+
+        const images = JSON.parse(req.body.images)
+
+        let urlFiles = null;
+
+        if (req.files) {
+            const nameFiles = await uploadFile(req.files);
+
+            if (nameFiles.ok == false) {
+                return res.status(500).json({ msg: "Error al subir los archivos" });
+            }
+
+            urlFiles = await cloudinaryService.uploadFiles(nameFiles);
+
+            if (urlFiles.ok == false) {
+                return res.status(500).json({ msg: "Error al subir los archivos a la nube" });
+            }
+
+            urlFiles = urlFiles.pathCloudinary.map(files => {
+                return {
+                    url_image: files.secure_url,
+                    public_id: files.public_id
+                };
+            });
+        }
 
         await client.query('BEGIN');
 
+        // ACTUALIZAR INFO GENERAL DEL PRODUCTO
         await client.query(
             `
-      UPDATE products SET
-        name = $1,
-        price = $2,
-        stock = $3,
-        unit_measure_id = $4,
-        standard_code_id = $5,
-        tax_rate = $6,
-        tribute_id = $7,
-        is_excluded = $8
-      WHERE id = $9
-      `,
+            UPDATE products SET
+                name = $1,
+                price = $2,
+                stock = $3,
+                unit_measure_id = $4,
+                standard_code_id = $5,
+                tax_rate = $6,
+                tribute_id = $7,
+                is_excluded = $8
+            WHERE id = $9
+            `,
             [
                 name,
                 price,
@@ -162,39 +200,82 @@ productCtrl.updateProducts = async (req, res) => {
             ]
         );
 
-
+        // ELIMINAMOS RELACIONES DE PRODUCTO CON CATEGORIAS QUE NO VIENEN 
         await client.query(
             `
-      DELETE FROM product_categories
-      WHERE product_id = $1
-      AND category_id NOT IN (SELECT UNNEST($2::int[]))
-      `,
-            [id, categories]
+            DELETE FROM product_categories
+            WHERE product_id = $1
+            AND categorie_id NOT IN (SELECT UNNEST($2::int[]))
+            `,
+            [id, JSON.parse(categories)]
         );
 
+        // INSERTAMOS NUEVOS REGISTROS ENTRE PRODUCTOS Y CATEGORIAS NUEVAS, SI YA EXISTEN NO PASA NADA.
         await client.query(
             `
-      INSERT INTO product_categories (product_id, category_id)
-      SELECT $1, UNNEST($2::int[])
-      ON CONFLICT (product_id, category_id) DO NOTHING
-      `,
-            [id, categories]
+            INSERT INTO product_categories (product_id, categorie_id)
+            SELECT $1, UNNEST($2::int[])
+            ON CONFLICT (product_id, categorie_id) DO NOTHING
+            `,
+            [id, JSON.parse(categories)]
         );
+
+        let deletes = null;
+
+        // ELIMINAMOS TODAS LA IMAGENES
+        if (Array.isArray(images) && images.length === 0) {
+            deletes = await client.query(
+                `DELETE FROM products_images WHERE product_id = $1 RETURNING public_id AS imageDelete`,
+                [id]
+            );
+        }
+
+        // ELIMINAMOS LA IMAGENES NO NI VIENEN
+        if (Array.isArray(images) && images.length > 0) {
+            deletes = await client.query(
+                `DELETE FROM products_images
+                WHERE product_id = $1
+                AND id NOT IN (
+                    SELECT pi.id FROM jsonb_to_recordset($2::jsonb) AS pi (id INT)
+                )
+                RETURNING public_id AS imageDelete
+                `,
+                [id, JSON.stringify(images)]
+            );
+        }
+
+        // INSERTAMOS LAS NUEVAS IMAGES SI HAY
+        if (urlFiles && urlFiles.length > 0) {
+            await client.query(
+            `
+            INSERT INTO products_images (product_id, url_image, public_id)
+            SELECT $1, pi.url_image, pi.public_id
+            FROM jsonb_to_recordset($2::jsonb) AS pi (
+                url_image TEXT,
+                public_id TEXT
+            )
+            `,
+                [id, JSON.stringify(urlFiles)]
+            );
+        }
 
         await client.query('COMMIT');
 
-        res.json({ msg: 'Producto actualizado correctamente' });
+        // SI SE ELIMINARIN IMAGENES, LAS ELIMINAMOS DE CLOUDiNARY
+        if (deletes && deletes.rows.length > 0) {
+            await cloudinaryService.deleteFiles(deletes);
+        }
 
+        res.json({ msg: 'Producto actualizado correctamente' });
     } catch (error) {
         await client.query('ROLLBACK');
         console.error(error);
-        res.status(500).json({
-            msg: 'Ha ocurrido un error en el servidor'
-        });
+        res.status(500).json({ msg: 'Ha ocurrido un error en el servidor' });
     } finally {
         client.release();
     }
 };
+
 
 productCtrl.deleteProducts = async (req, res) => {
     try {

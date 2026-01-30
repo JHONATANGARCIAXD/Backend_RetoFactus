@@ -17,6 +17,10 @@ routerProducts.post("/saveProducts", [
     valideFields
 ], productCtrl.saveProducts)
 
+routerProducts.put("/updateProducts/:id" , [
+    webToken.verifyJwt()
+], productCtrl.updateProducts)
+
 
 routerProducts.put("/activeProducts/:id", [
     webToken.verifyJwt(),
