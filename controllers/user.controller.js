@@ -44,8 +44,9 @@ userCtrl.loginUsers = async (req, res) => {
         res.cookie("auth", token, {
             httpOnly: true,
             secure: true,
-            sameSite: "strict",
-            maxAge: 24 * 60 * 60 * 1000 // 1 día
+            sameSite: "none",
+            maxAge: 24 * 60 * 60 * 1000, // 1 día
+            path: "/"
         });
 
         res.status(200).json({ msg: "Logueado Existosamente." });
@@ -89,7 +90,7 @@ userCtrl.getUsers = async (req, res) => {
         const offset = (page - 1) * limit
         params.push(Number(limit), Number(offset))
 
-        const users = await db.query(`SELECT u.first_name, u.last_name, u.email, u.role, u.status ${sql}`, params)
+        const users = await db.query(`SELECT u.id, u.first_name, u.last_name, u.email, u.document_number, u.address, u.phone, u.role, u.status ${sql}`, params)
 
         // await pruebas()
 
