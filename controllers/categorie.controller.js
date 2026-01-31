@@ -91,6 +91,7 @@ categoriesCtrl.deleteCategories = async (req, res) => {
     }
 }
 
+
 categoriesCtrl.updateCategories = async (req, res) => {
     try {
         const { id } = req.params
@@ -103,13 +104,6 @@ categoriesCtrl.updateCategories = async (req, res) => {
         res.status(500).json({ msg: "Ha ocurrido un error en el servidor, Intenta mas tarde." });
     }
 }
-
-
-
-
-
-
-
 
 
 export { categoriesCtrl }
