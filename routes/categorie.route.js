@@ -15,6 +15,16 @@ routerCategories.post('/saveCategories', [
     webToken.verifyJwt(),
 ], categoriesCtrl.saveCategories)
 
+
+routerCategories.put('/updateCategories/:id', [
+    webToken.verifyJwt(),
+    check('name').notEmpty().withMessage('El nombre es obligatorio'),
+    check('description').notEmpty().withMessage('La descripcion es obligatoria'),
+    check('id',).notEmpty().withMessage('El id es obligatorio'),
+    valideFields,
+], categoriesCtrl.updateCategories)
+
+
 routerCategories.put('/activeCategories/:id', [
     webToken.verifyJwt(),
 ], categoriesCtrl.activeCategories)

@@ -92,4 +92,18 @@ categoriesCtrl.deleteCategories = async (req, res) => {
 }
 
 
+categoriesCtrl.updateCategories = async (req, res) => {
+    try {
+        const { id } = req.params
+        const { name, description } = req.body
+        
+        await db.query(`UPDATE categories SET name=$1, description=$2 WHERE id=$3`, [name, description, id])
+        res.status(200).json({ msg: "Categoria Actualizada Existosamente." })
+    }
+    catch (error) {
+        res.status(500).json({ msg: "Ha ocurrido un error en el servidor, Intenta mas tarde." });
+    }
+}
+
+
 export { categoriesCtrl }
