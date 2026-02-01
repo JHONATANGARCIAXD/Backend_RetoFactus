@@ -4,7 +4,6 @@ const userHelper = {};
 
 userHelper.existUser = async (document_number) => {
     const user = await db.query('SELECT EXISTS (SELECT u.id FROM users u WHERE u.document_number = $1)', [document_number]);
-    console.log(user)
 
     if (user.rows[0].exist) {
         throw new Error(`El numero de documento ya esta registrado`);

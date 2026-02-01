@@ -18,7 +18,7 @@ routerUsers.get('/getUsers', [
 ], userCtrl.getUsers);
 
 routerUsers.post('/saveUsers', [
-    webToken.verifyJwt(),
+    // webToken.verifyJwt(),
     check('document_number').notEmpty().withMessage('El numero de documento es obligatorio').bail()
         .isLength({ min: 6, max: 20 }).withMessage('El numero de documento debe tener entre 6 y 20 caracteres').bail()
         .custom(userHelper.existUser),

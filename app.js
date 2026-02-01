@@ -10,6 +10,7 @@ import { routerCategories } from './routes/categorie.route.js';
 import { routerProducts } from './routes/product.route.js';
 import { routermunicipalities } from './routes/municipalities.route.js';
 import { routerSales } from './routes/sale.route.js';
+import { routerTypeDocuments } from './routes/typeDocument.route.js';
 const app = express();
 
 app.use(cors({
@@ -36,6 +37,7 @@ app.use('/api/categories', routerCategories);
 app.use('/api/products', routerProducts);
 app.use('/api/municipalities', routermunicipalities)
 app.use('/api/sales', routerSales);
+app.use('/api/typeDocuments', routerTypeDocuments);
 
 db.query('SELECT NOW()')
     .then(() => console.log('Database connected'))

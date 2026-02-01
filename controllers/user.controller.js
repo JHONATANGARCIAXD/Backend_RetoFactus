@@ -42,11 +42,11 @@ userCtrl.loginUsers = async (req, res) => {
         const token = await webToken.generateJwt(user)
 
         res.cookie("auth", token, {
-            httpOnly: true,
-            secure: true,
-            sameSite: "none",
+            httpOnly: true, // La cookie NO se puede leer
+            secure: true, // La cookie solo se envía por HTTPS
+            sameSite: "none", // Permite que la cookie se envíe en peticiones cross-site
             maxAge: 24 * 60 * 60 * 1000, // 1 día
-            path: "/"
+            path: "/" // La cookie estará disponible para todas las rutas
         });
 
         res.status(200).json({ msg: "Logueado Existosamente." });
@@ -79,7 +79,7 @@ userCtrl.getUsers = async (req, res) => {
             params.push(status)
         }
 
-        let sql = 'FROM users u'
+        let sql = 'FROM users u LEFT JOIN type_documents td ON u.type_document = td.id'
         if (filter.length > 0) {
             sql += ' WHERE ' + filter.join(' AND ')
         }
@@ -90,7 +90,10 @@ userCtrl.getUsers = async (req, res) => {
         const offset = (page - 1) * limit
         params.push(Number(limit), Number(offset))
 
-        const users = await db.query(`SELECT u.id, u.first_name, u.last_name, u.email, u.document_number, u.address, u.phone, u.role, u.status ${sql}`, params)
+        const users = await db.query(`SELECT u.id, u.first_name, u.last_name, u.email, 
+            jsonb_build_object(
+            'id', td.id,
+            'name', td.description) AS type_document, u.document_number, u.address, u.phone, u.role, u.status ${sql}`, params)
 
         // await pruebas()
 
@@ -103,14 +106,12 @@ userCtrl.getUsers = async (req, res) => {
 
 userCtrl.saveUsers = async (req, res) => {
     try {
-        const { document_number, first_name, last_name, phone, email, address, password, role, legal_organization_id, tribute_id, company, municipality, trade_name } = req.body
-
-        console.log(municipality)
+        const {type_document, document_number, first_name, last_name, phone, email, address, password, role, legal_organization_id, tribute_id, company, municipality, trade_name } = req.body
 
         const passwordHash = await bcrypt.hash(password, 10);
 
-        await db.query(`INSERT INTO users (document_number, first_name, last_name, email, address, phone, password, role, legal_organization_id, tribute_id, company, municipality_id, trade_name, department, municipality) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
-            [document_number, first_name, last_name, email, address, phone, passwordHash, role, legal_organization_id, tribute_id, company, municipality.id, trade_name, municipality.department, municipality.name])
+        await db.query(`INSERT INTO users (type_document, document_number, first_name, last_name, email, address, phone, password, role, legal_organization_id, tribute_id, company, municipality_id, trade_name, department, municipality) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+            [type_document, document_number, first_name, last_name, email, address, phone, passwordHash, role, legal_organization_id, tribute_id, company, municipality.id, trade_name, municipality.department, municipality.name])
 
         res.json({ msg: "Usuario Registrado Existosamente." });
     }
