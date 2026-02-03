@@ -5,7 +5,7 @@ const typeDocumentsCtrl = {}
 
 typeDocumentsCtrl.getTypeDocuments = async (req, res) => {
     try {
-        const typeDocuments = await db.query(`SELECT * FROM type_documents WHERE status = true ORDER BY name ASC`)
+        const typeDocuments = await db.query(`SELECT * FROM type_documents ORDER BY name ASC`)
         res.status(200).json({ msg: typeDocuments.rows })
     } catch (error) {
         console.log(error)
