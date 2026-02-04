@@ -29,9 +29,9 @@ routerUsers.post('/saveUsers', [
     check('address').notEmpty().withMessage('La direccion es obligatoria'),
     check('phone').notEmpty().withMessage('El telefono es obligatorio').bail()
         .isLength({ min: 7, max: 15 }).withMessage('El telefono debe tener entre 7 y 15 caracteres'),
-    check('password').notEmpty().withMessage('La contraseña es obligatoria').bail()
+    check('password').optional().notEmpty().withMessage('La contraseña es obligatoria').bail()
         .isLength({ min: 6 }).withMessage('La contraseña debe tener al menos 6 caracteres'),
-    check('role').notEmpty().withMessage('El rol es obligatorio'),
+    check('role').optional().notEmpty().withMessage('El rol es obligatorio'),
     valideFields
 ], userCtrl.saveUsers);
 

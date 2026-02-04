@@ -106,13 +106,13 @@ userCtrl.getUsers = async (req, res) => {
 
 userCtrl.saveUsers = async (req, res) => {
     try {
-        const { type_document, document_number, first_name, last_name, phone, email, address, password, role, legal_organization_id, tribute_id, company, municipality, trade_name } = req.body
+        let ramdomPassword = crypto.randomUUID().slice(0, 8);
+        const { type_document, document_number, first_name, last_name, phone, email, address, password = "12345678", role = "client", legal_organization_id, tribute_id, company, municipality, trade_name } = req.body
 
         const passwordHash = await bcrypt.hash(password, 10);
 
         await db.query(`INSERT INTO users (type_document, document_number, first_name, last_name, email, address, phone, password, role, legal_organization_id, tribute_id, company, municipality_id, trade_name, department, municipality) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
             [type_document, document_number, first_name, last_name, email, address, phone, passwordHash, role, legal_organization_id, tribute_id, company, municipality.id, trade_name, municipality.department, municipality.name])
-
         res.json({ msg: "Usuario Registrado Existosamente." });
     }
     catch (error) {
