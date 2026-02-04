@@ -84,8 +84,10 @@ userCtrl.getUsers = async (req, res) => {
             sql += ' WHERE ' + filter.join(' AND ')
         }
 
+        
         const totalRows = await db.query(`SELECT (COUNT(DISTINCT u.id)::INT) ${sql}`, params);
-
+        
+        sql += ' ORDER BY u.status ASC, u.id DESC'
         sql += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`
         const offset = (page - 1) * limit
         params.push(Number(limit), Number(offset))
