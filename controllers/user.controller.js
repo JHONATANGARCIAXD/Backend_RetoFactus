@@ -17,26 +17,26 @@ userCtrl.loginUsers = async (req, res) => {
             return res.status(400).json({ msg: "Contraseña incorrecta" });
         }
 
-        // const response = await axios.post(`https://api-sandbox.factus.com.co/oauth/token`, {
-        //     client_id: process.env.CLIENT_ID,
-        //     client_secret: process.env.CLIENT_SECRET,
-        //     grant_type: 'password',
-        //     username: `sandbox@factus.com.co`,
-        //     password: `sandbox2024%`,
-        // }, {
-        //     headers: {
-        //         'Content-Type': 'application/json'
-        //     }
-        // })
-        // const access_token = response.data.access_token
+        const response = await axios.post(`https://api-sandbox.factus.com.co/oauth/token`, {
+            client_id: process.env.CLIENT_ID,
+            client_secret: process.env.CLIENT_SECRET,
+            grant_type: 'password',
+            username: `sandbox@factus.com.co`,
+            password: `sandbox2024%`,
+        }, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        const access_token = response.data.access_token
 
 
-        // const refresh_token = response.data.refresh_token
-        // const expires_in = Date.now() + (response.data.expires_in * 1000)
+        const refresh_token = response.data.refresh_token
+        const expires_in = Date.now() + (response.data.expires_in * 1000)
 
 
 
-        // await db.query(`UPDATE users SET access_token = $1, refresh_token = $2, expires_in = $3 WHERE id = ${user.id}`, [access_token, refresh_token, expires_in])
+        await db.query(`UPDATE users SET access_token = $1, refresh_token = $2, expires_in = $3 WHERE id = ${user.id}`, [access_token, refresh_token, expires_in])
 
 
         const token = await webToken.generateJwt(user)
@@ -106,7 +106,7 @@ userCtrl.getUsers = async (req, res) => {
 
 userCtrl.saveUsers = async (req, res) => {
     try {
-        const {type_document, document_number, first_name, last_name, phone, email, address, password, role, legal_organization_id, tribute_id, company, municipality, trade_name } = req.body
+        const { type_document, document_number, first_name, last_name, phone, email, address, password, role, legal_organization_id, tribute_id, company, municipality, trade_name } = req.body
 
         const passwordHash = await bcrypt.hash(password, 10);
 
