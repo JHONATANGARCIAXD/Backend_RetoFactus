@@ -65,7 +65,7 @@ webToken.verifyJwtFactus = async (req, res, next) => {
     try {
         const user = req.user
 
-        if (user.expires_in < Date.now()) {
+        if (user.expires_in < Date.now() || !user.access_token) {
             const response = await axios.post('https://api-sandbox.factus.com.co/oauth/token', {
                 client_id: process.env.CLIENT_ID,
                 client_secret: process.env.CLIENT_SECRET,
