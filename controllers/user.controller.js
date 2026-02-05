@@ -106,6 +106,24 @@ userCtrl.getUsers = async (req, res) => {
     }
 };
 
+userCtrl.getUserById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const user = await db.query(`SELECT u.id, u.first_name, u.last_name, u.email, 
+            jsonb_build_object(
+            'id', td.id,
+            'name', td.description) AS type_document, u.document_number, u.address, u.phone, u.role, u.status, u.legal_organization_id, u.tribute_id, u.company, u.municipality_id, u.trade_name
+            FROM users u 
+            LEFT JOIN type_documents td ON u.type_document = td.id
+            WHERE u.id = $1`, [id]);
+
+        res.json({ msg: user.rows[0] });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ msg: "Ha ocurrido un error en el servidor, Intenta mas tarde." });
+    }
+}
+
 userCtrl.saveUsers = async (req, res) => {
     try {
         let ramdomPassword = crypto.randomUUID().slice(0, 8);

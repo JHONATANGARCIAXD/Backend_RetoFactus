@@ -17,6 +17,10 @@ routerUsers.get('/getUsers', [
     webToken.verifyJwt()
 ], userCtrl.getUsers);
 
+routerUsers.get('/getUser/:id', [
+    webToken.verifyJwt(),
+], userCtrl.getUserById);
+
 routerUsers.post('/saveUsers', [
     // webToken.verifyJwt(),
     check('document_number').notEmpty().withMessage('El numero de documento es obligatorio').bail()
