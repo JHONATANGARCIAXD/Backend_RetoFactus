@@ -114,7 +114,7 @@ userCtrl.getUserById = async (req, res) => {
             jsonb_build_object(
             'municipality_id', u.municipality_id,
             'name', u.municipality,
-            'deparment', u.department) AS municipality,
+            'department', u.department) AS municipality,
 
             jsonb_build_object(
             'id', td.id,
