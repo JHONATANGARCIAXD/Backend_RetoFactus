@@ -49,7 +49,14 @@ userCtrl.loginUsers = async (req, res) => {
             path: "/" // La cookie estará disponible para todas las rutas
         });
 
-        res.status(200).json({ msg: "Logueado Existosamente." });
+        res.status(200).json({
+            msg: "Logueado Existosamente.", user: {
+                id: user.id,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                role: user.role
+            }
+        });
     }
     catch (error) {
         console.error(error);
@@ -84,9 +91,9 @@ userCtrl.getUsers = async (req, res) => {
             sql += ' WHERE ' + filter.join(' AND ')
         }
 
-        
+
         const totalRows = await db.query(`SELECT (COUNT(DISTINCT u.id)::INT) ${sql}`, params);
-        
+
         sql += ' ORDER BY u.status ASC, u.id DESC'
         sql += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`
         const offset = (page - 1) * limit
@@ -131,6 +138,35 @@ userCtrl.getUserById = async (req, res) => {
     }
 }
 
+userCtrl.getMe = async (req, res) => {
+    try {
+        const user = req.user;
+        const userData = await db.query(`SELECT u.first_name, u.last_name, u.email,
+
+            jsonb_build_object(
+            'municipality_id', u.municipality_id,
+            'name', u.municipality,
+            'department', u.department) AS municipality,
+
+            jsonb_build_object(
+            'id', td.id,
+            'name', td.name,
+            'description', td.description) AS type_document, 
+            
+            u.document_number, u.address, u.phone, u.legal_organization_id, u.tribute_id, u.company, u.trade_name
+
+            FROM users u
+            LEFT JOIN type_documents td ON u.type_document = td.id
+            WHERE u.id = $1`, [user.id]);
+
+
+            res.json({ msg: userData.rows[0] });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ msg: "Ha ocurrido un error en el servidor, Intenta mas tarde." });
+    }
+}
+
 userCtrl.saveUsers = async (req, res) => {
     try {
         let ramdomPassword = crypto.randomUUID().slice(0, 8);
@@ -143,6 +179,29 @@ userCtrl.saveUsers = async (req, res) => {
         res.json({ msg: "Usuario Registrado Existosamente." });
     }
     catch (error) {
+        console.log(error)
+        res.status(500).json({ msg: "Ha ocurrido un error en el servidor, Intenta mas tarde." });
+    }
+}
+
+userCtrl.updateUsers = async (req, res) => {
+    try {
+        const { id } = req.params
+        const user = req.user
+
+        console.log(user)
+
+        if (user.id != id && user.role !== 'admin') {
+            return res.status(403).json({ msg: "No tienes permisos para actualizar este usuario." });
+        }
+
+        const { type_document, document_number, first_name, last_name, phone, email, address, role, legal_organization_id, tribute_id, company, municipality, trade_name } = req.body
+
+        await db.query(`UPDATE users SET type_document = $1, document_number = $2, first_name = $3, last_name = $4, email = $5, address = $6, phone = $7, role = $8, legal_organization_id = $9, tribute_id = $10, company = $11, municipality_id = $12, trade_name = $13, department = $14, municipality = $15 WHERE id = $16`,
+
+            [type_document, document_number, first_name, last_name, email, address, phone, role, legal_organization_id, tribute_id, company, municipality.id, trade_name, municipality.department, municipality.name, id])
+        res.status(200).json({ msg: "Usuario Actualizado Existosamente." })
+    } catch (error) {
         console.log(error)
         res.status(500).json({ msg: "Ha ocurrido un error en el servidor, Intenta mas tarde." });
     }
@@ -170,6 +229,21 @@ userCtrl.inactiveUsers = async (req, res) => {
     }
 }
 
+userCtrl.logoutUsers = async (req, res) => {
+    try {
+        res.clearCookie('auth', {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'strict',
+            path: "/"
+        });
+        res.status(200).json({ msg: "Sesión cerrada exitosamente" });
+    } catch (error) {
+        res.status(500).json({ msg: "Ha ocurrido un error en el servidor." });
+    }
+
+}
+
 userCtrl.deleteUser = async (req, res) => {
     try {
         const { id } = req.params;
@@ -180,7 +254,5 @@ userCtrl.deleteUser = async (req, res) => {
         res.status(500).json({ msg: "Ha ocurrido un error en el servidor, Intenta mas tarde." });
     }
 }
-
-
 
 export { userCtrl };

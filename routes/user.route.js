@@ -21,6 +21,10 @@ routerUsers.get('/getUser/:id', [
     webToken.verifyJwt(),
 ], userCtrl.getUserById);
 
+routerUsers.get('/getMe', [
+    webToken.verifyJwt(['admin', 'client']),
+], userCtrl.getMe);
+
 routerUsers.post('/saveUsers', [
     // webToken.verifyJwt(),
     check('document_number').notEmpty().withMessage('El numero de documento es obligatorio').bail()
@@ -39,6 +43,11 @@ routerUsers.post('/saveUsers', [
     valideFields
 ], userCtrl.saveUsers);
 
+
+routerUsers.put('/updateUsers/:id', [
+    webToken.verifyJwt(['admin', 'client']),
+], userCtrl.updateUsers);
+
 routerUsers.put('/activeUsers/:id', [
     webToken.verifyJwt(),
 ], userCtrl.activeUsers);
@@ -46,6 +55,10 @@ routerUsers.put('/activeUsers/:id', [
 routerUsers.put('/inactiveUsers/:id', [
     webToken.verifyJwt(),
 ], userCtrl.inactiveUsers);
+
+routerUsers.post('/logoutUsers', [
+    webToken.verifyJwt(['admin', 'client']),
+], userCtrl.logoutUsers);
 
 routerUsers.delete('/deleteUser/:id', [
     webToken.verifyJwt(),

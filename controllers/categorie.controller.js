@@ -25,16 +25,12 @@ categoriesCtrl.getCategories = async (req, res) => {
             sql += ' WHERE ' + filter.join(' AND ')
         }
         
-        console.log(sql, params)
         let totalRows = await db.query(`SELECT (COUNT(DISTINCT c.id)::INT) ${sql} `, params)
 
         sql += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`
         const offset = (page - 1) * limit
         params.push(Number(limit), Number(offset))
         
-
-
-
         const categories = await db.query(`SELECT c.* ${sql}`, params)
 
         res.status(200).json({ msg: { categories: categories.rows, totalRows: totalRows.rows[0].count } })
