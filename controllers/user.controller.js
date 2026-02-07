@@ -28,20 +28,20 @@ userCtrl.loginUsers = async (req, res) => {
                 'Content-Type': 'application/json'
             }
         })
-        const access_token = response.data.access_token
+        const accessTokenFactus = response.data.access_token
+        const refreshTokenFactus = response.data.refresh_token
+        const factusExpiresIn = Date.now() + (response.data.expires_in * 1000)
 
-
-        const refresh_token = response.data.refresh_token
-        const expires_in = Date.now() + (response.data.expires_in * 1000)
-
-
-
-        await db.query(`UPDATE users SET access_token = $1, refresh_token = $2, expires_in = $3 WHERE id = ${user.id}`, [access_token, refresh_token, expires_in])
 
 
         const token = await webToken.generateJwt(user)
+        const refreshToken = await webToken.generateRefreshToken(user);
 
-        res.cookie("auth", token, {
+        await db.query(`UPDATE users SET access_token_factus = $1, refresh_token_factus = $2, refresh_token = $3, factus_expires_in = $4 WHERE id = ${user.id}`, [accessTokenFactus, refreshTokenFactus, refreshToken, factusExpiresIn])
+
+
+       
+        res.cookie("auth", refreshToken, {
             httpOnly: true, // La cookie NO se puede leer
             secure: true, // La cookie solo se envía por HTTPS
             sameSite: "none", // Permite que la cookie se envíe en peticiones cross-site
@@ -51,6 +51,7 @@ userCtrl.loginUsers = async (req, res) => {
 
         res.status(200).json({
             msg: "Logueado Existosamente.", user: {
+                token: token,
                 id: user.id,
                 first_name: user.first_name,
                 last_name: user.last_name,
@@ -227,6 +228,14 @@ userCtrl.inactiveUsers = async (req, res) => {
     } catch (error) {
         res.status(500).json({ msg: "Ha ocurrido un error en el servidor, Intenta mas tarde." });
     }
+}
+
+userCtrl.refreshToken = async (req, res) => {
+try {
+    
+} catch (error) {
+    
+}
 }
 
 userCtrl.logoutUsers = async (req, res) => {
