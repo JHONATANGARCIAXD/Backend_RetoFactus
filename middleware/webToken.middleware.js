@@ -16,7 +16,7 @@ webToken.generateJwt = (user) => {
       payload,
       process.env.ACCESS_TOKEN,
       {
-        expiresIn: "4h",
+        expiresIn: "30m",
       },
       (error, token) => {
         if (error) {
@@ -52,6 +52,23 @@ webToken.generateRefreshToken = (user) => {
     );
   });
 };
+
+webToken.verifyRefreshToken = (req, res, next) => {
+  try {
+    const refreshToken = req.cookies.auth;
+    if (!refreshToken) {
+      return res.status(401).json({ msg: "No refresh token" });
+    }
+
+    const payload = jwt.verify(refreshToken, process.env.REFRESH_TOKEN);
+
+    req.refreshPayload = payload;
+    next();
+  } catch (error) {
+    return res.status(403).json({ msg: "Refresh token inválido" });
+  }
+};
+
 webToken.verifyJwt = (rolesAllowed = ["admin"]) => {
   return async (req, res, next) => {
     try {

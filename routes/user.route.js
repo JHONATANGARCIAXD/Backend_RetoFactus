@@ -60,6 +60,10 @@ routerUsers.post('/logoutUsers', [
     webToken.verifyJwt(['admin', 'client']),
 ], userCtrl.logoutUsers);
 
+routerUsers.post('/refreshToken', [
+    webToken.verifyRefreshToken
+], userCtrl.refreshToken);
+
 routerUsers.delete('/deleteUser/:id', [
     webToken.verifyJwt(),
 ], userCtrl.deleteUser);
