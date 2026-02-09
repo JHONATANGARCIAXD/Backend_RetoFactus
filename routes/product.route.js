@@ -19,9 +19,7 @@ routerProducts.post("/saveProducts", [
     check('price').notEmpty().withMessage('El precio del producto es obligatorio').bail().isInt({ gt: -1 }).withMessage('El precio del producto debe ser un numero mayor a 0'),
     check('stock').notEmpty().withMessage('El stock del producto es obligatorio').bail().isInt({ gt: -1 }).withMessage('El stock del producto debe ser un numero entero igual o mayor a 0'),
     check('unit_measure_id').notEmpty().withMessage('La unidad de medida es obligatoria'),
-    check('standard_code_id').notEmpty().withMessage('El codigo estandar es obligatorio'),
     check('tax_rate').notEmpty().withMessage('La tasa de impuesto es obligatoria'),
-    check('tribute_id').notEmpty().withMessage('El tributo es obligatorio'),
     check('is_excluded').notEmpty().withMessage('El valor de excluido de IVA es obligatorio'),
     check('categories').custom(categorieHelper.existCategorie),
     valideFields
