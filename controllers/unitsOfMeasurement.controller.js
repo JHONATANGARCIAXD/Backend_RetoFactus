@@ -8,7 +8,7 @@ unitsOfMeasurementCtrl.getUnitsOfMeasurement = async (req, res) => {
         const units = await axios.get('https://api-sandbox.factus.com.co/v1/measurement-units', {
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${user.access_token}`
+                'Authorization': `Bearer ${user.access_token_factus}`
             }
         });
 
