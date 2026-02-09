@@ -60,7 +60,7 @@ productCtrl.getProducts = async (req, res) => {
 
 productCtrl.saveProducts = async (req, res) => {
     try {
-        const { code_reference, name, price, categories, stock, unit_measure_id, standard_code_id, tax_rate, tribute_id, is_excluded } = req.body
+        const { code_reference, name, price, categories, stock, unit_measure_id, tax_rate, is_excluded } = req.body
 
         const nameFiles = await uploadFile(req.files, ['png', 'jpg', 'jpeg'])
 
@@ -83,7 +83,7 @@ productCtrl.saveProducts = async (req, res) => {
 
         await db.query('BEGIN')
 
-        let product = await db.query(`INSERT INTO products (code_reference, name, price, stock, unit_measure_id,  standard_code_id, tax_rate, tribute_id, is_excluded) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING  id`, [code_reference, name, price, stock, unit_measure_id, standard_code_id, tax_rate, tribute_id, is_excluded])
+        let product = await db.query(`INSERT INTO products (code_reference, name, price, stock, unit_measure_id,  standard_code_id, tax_rate, tribute_id, is_excluded) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING  id`, [code_reference, name, price, stock, unit_measure_id, 1, tax_rate, 1, is_excluded])
 
         product = product.rows[0].id
 
