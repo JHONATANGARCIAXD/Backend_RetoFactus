@@ -57,7 +57,6 @@ routerUsers.put('/inactiveUsers/:id', [
 ], userCtrl.inactiveUsers);
 
 routerUsers.post('/logoutUsers', [
-    webToken.verifyJwt(['admin', 'client']),
 ], userCtrl.logoutUsers);
 
 routerUsers.post('/refreshToken', [
