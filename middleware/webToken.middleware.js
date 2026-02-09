@@ -114,7 +114,7 @@ webToken.verifyJwtFactus = async (req, res, next) => {
           client_id: process.env.CLIENT_ID,
           client_secret: process.env.CLIENT_SECRET,
           grant_type: "refresh_token",
-          refresh_token: user.refresh_token,
+          refresh_token: user.refresh_token_factus,
         },
         {
           headers: {
@@ -123,10 +123,8 @@ webToken.verifyJwtFactus = async (req, res, next) => {
         },
       );
 
-      console.log("SE LOGUEO");
-
       await db.query(
-        `UPDATE users SET access_token = $1, refresh_token = $2, expires_in = $3 WHERE id = ${user.id}`,
+        `UPDATE users SET access_token_factus = $1, refresh_token_factus = $2, factus_expires_in = $3 WHERE id = ${user.id}`,
         [
           response.data.access_token,
           response.data.refresh_token,
@@ -134,15 +132,13 @@ webToken.verifyJwtFactus = async (req, res, next) => {
         ],
       );
 
-      req.user.access_token = response.data.access_token;
+      req.user.access_token_factus = response.data.access_token;
     }
 
     next();
   } catch (error) {
     console.error(error);
-    res
-      .status(500)
-      .json({ msg: "Ha ocurrido un error en el servidor, Intenta mas tarde." });
+    res.status(500).json({ msg: "Ha ocurrido un error en el servidor, Intenta mas tarde." });
   }
 };
 
