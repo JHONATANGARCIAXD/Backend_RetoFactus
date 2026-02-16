@@ -12,6 +12,12 @@ routerProducts.get("/getProducts", [
     webToken.verifyJwt(),
 ], productCtrl.getProducts)
 
+routerProducts.get("/getProductsById/:id", [
+    webToken.verifyJwt(),
+    check('id').custom(productHelper.existProduct),
+    valideFields
+], productCtrl.getProductById)
+
 routerProducts.post("/saveProducts", [
     webToken.verifyJwt(),
     check('name').notEmpty().withMessage('El nombre del producto es obligatorio'),
@@ -28,9 +34,9 @@ routerProducts.post("/saveProducts", [
 routerProducts.put("/updateProducts/:id", [
     webToken.verifyJwt(),
     check('id').custom(productHelper.existProduct),
+    check('name').notEmpty().withMessage('El nombre del producto es obligatorio'),
     valideFields
 ], productCtrl.updateProducts)
-
 
 routerProducts.put("/activeProducts/:id", [
     webToken.verifyJwt(),

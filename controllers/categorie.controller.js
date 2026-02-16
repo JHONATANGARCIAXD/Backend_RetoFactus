@@ -2,7 +2,6 @@ import { db } from "../db.config.js";
 
 const categoriesCtrl = {}
 
-
 categoriesCtrl.getCategories = async (req, res) => {
     try {
         const { search, status, page = 1, limit = 10 } = req.query
@@ -89,7 +88,6 @@ categoriesCtrl.deleteCategories = async (req, res) => {
         res.status(500).json({ msg: "Ha ocurrido un error en el servidor, Intenta mas tarde." });
     }
 }
-
 
 categoriesCtrl.updateCategories = async (req, res) => {
     try {

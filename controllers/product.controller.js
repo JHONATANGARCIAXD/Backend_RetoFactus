@@ -58,9 +58,31 @@ productCtrl.getProducts = async (req, res) => {
     }
 }
 
+productCtrl.getProductById = async (req, res) => {
+    try {
+        const { id } = req.params
+        const product = await db.query(`SELECT p.*, ARRAY_AGG(DISTINCT c.name) AS categories, 
+            COALESCE(
+                ARRAY_AGG(
+                jsonb_build_object(
+                'id', pi.id,
+                'url_image', pi.url_image,
+                'public_id', pi.public_id))
+            FILTER (WHERE pi.id IS NOT NULL),
+            ARRAY[]::jsonb[] 
+            ) AS images FROM products p LEFT JOIN product_categories pc ON pc.product_id = p.id LEFT JOIN categories c ON c.id = pc.categorie_id LEFT JOIN products_images pi ON p.id = pi.product_id WHERE p.id = $1 GROUP BY p.id`, [id])
+
+        res.status(200).json({ msg: product.rows[0] })
+    }
+    catch (error) {
+        console.error(error)
+        res.status(500).json({ msg: "Ha ocurrido un error en el servidor, Intenta mas tarde." });
+    }
+}
+
 productCtrl.saveProducts = async (req, res) => {
     try {
-        const { code_reference, name, price, categories, stock, unit_measure_id, tax_rate, is_excluded } = req.body
+        const { code_reference, name, price, categories, stock, unit_measure_id, tax_rate, is_excluded, has_discount, discount_value } = req.body
 
         const nameFiles = await uploadFile(req.files, ['png', 'jpg', 'jpeg'])
 
@@ -83,7 +105,7 @@ productCtrl.saveProducts = async (req, res) => {
 
         await db.query('BEGIN')
 
-        let product = await db.query(`INSERT INTO products (code_reference, name, price, stock, unit_measure_id,  standard_code_id, tax_rate, tribute_id, is_excluded) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING  id`, [code_reference, name, price, stock, unit_measure_id, 1, tax_rate, 1, is_excluded])
+        let product = await db.query(`INSERT INTO products (code_reference, name, price, stock, unit_measure_id,  standard_code_id, tax_rate, tribute_id, is_excluded, has_discount, discount_value) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING  id`, [code_reference, name, price, stock, unit_measure_id, 1, tax_rate, 1, is_excluded, has_discount, discount_value ])
 
         product = product.rows[0].id
 

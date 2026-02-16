@@ -20,9 +20,9 @@ webToken.generateJwt = (user) => {
       },
       (error, token) => {
         if (error) {
+          console.log(error);
           reject("Error al generar el token ");
         } else {
-          console.log(token);
           resolve(token);
         }
       },
@@ -81,9 +81,7 @@ webToken.verifyJwt = (rolesAllowed = ["admin"]) => {
       const user = await db.query(`SELECT u.* FROM users u WHERE u.id = ${id}`);
 
       if (!rolesAllowed.includes(role) || user.rows[0].role !== role) {
-        return res
-          .status(403)
-          .json({ msg: "No Tiene Permisos Para Realizar Esta Acción." });
+        return res.status(403).json({ msg: "No Tiene Permisos Para Realizar Esta Acción." });
       }
 
       if (user.rowCount == 0) {
