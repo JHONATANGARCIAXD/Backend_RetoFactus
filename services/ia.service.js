@@ -1,38 +1,18 @@
-import {
-    GoogleGenAI,
-    createUserContent,
-    createPartFromUri,
-} from "@google/genai";
-import { db } from "../db.config.js";
+import { GoogleGenAI } from "@google/genai";
 
-const products = await db.query('SELECT p.name, p.stock FROM products p');
+const ai = new GoogleGenAI({});
 
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const iaService = async (contexto, prompt) => {
+    const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash-lite",
+        contents: prompt,
+        config: {
+            systemInstruction: `${contexto}`,
+        },
+    });
 
-const pruebas = async () => {
-    try {
-
-        const image = await ai.files.upload({
-            file: "./descarga.png",
-        });
-
-        const response = await ai.models.generateContent({
-            model: "gemini-3-flash-preview",
-            contents: [
-                createUserContent([
-                    "GENERE UN RESUMEN DE IMAGEN",
-                    createPartFromUri(image.uri, image.mimeType),
-                ]),
-            ],
-        });
-
-        console.log(JSON.stringify(response.text, null, 2));
-    }
-    catch (error) {
-        console.error(error);
-    }
+    return response.text;
 }
 
-
-export { pruebas };
+export { iaService }

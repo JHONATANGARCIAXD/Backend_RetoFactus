@@ -34,15 +34,20 @@ productCtrl.getProducts = async (req, res) => {
 
         const totalRows = await db.query(`SELECT (COUNT(DISTINCT p.id)::INT)  ${sql}`, params)
 
-        sql += ' GROUP BY p.id'
+        sql += ` GROUP BY p.id ORDER BY p.status ASC, p.id DESC`
         sql += ` LIMIT $${params.length + 1} OFFSET $${params.length + 2}`
         const offset = (page - 1) * limit
         params.push(Number(limit), Number(offset))
 
-        const products = await db.query(`SELECT p.*, ARRAY_AGG(DISTINCT c.name) AS categories, 
+        const products = await db.query(`SELECT p.*,
+            COALESCE(
+                ARRAY_AGG(DISTINCT c.name) FILTER (WHERE c.id IS NOT NULL),
+                ARRAY[]::text[]
+            ) AS categories, 
+            
             COALESCE(
                 ARRAY_AGG(
-                jsonb_build_object(
+                DISTINCT jsonb_build_object(
                 'id', pi.id,
                 'url_image', pi.url_image,
                 'public_id', pi.public_id)) 
@@ -61,10 +66,15 @@ productCtrl.getProducts = async (req, res) => {
 productCtrl.getProductById = async (req, res) => {
     try {
         const { id } = req.params
-        const product = await db.query(`SELECT p.*, ARRAY_AGG(DISTINCT c.name) AS categories, 
+        const product = await db.query(`SELECT p.*, 
+            COALESCE(
+                ARRAY_AGG(DISTINCT c.id) FILTER (WHERE c.id IS NOT NULL),
+                ARRAY[]::int[]
+            ) AS categories, 
+
             COALESCE(
                 ARRAY_AGG(
-                jsonb_build_object(
+                DISTINCT jsonb_build_object(
                 'id', pi.id,
                 'url_image', pi.url_image,
                 'public_id', pi.public_id))
@@ -82,7 +92,7 @@ productCtrl.getProductById = async (req, res) => {
 
 productCtrl.saveProducts = async (req, res) => {
     try {
-        const { code_reference, name, price, categories, stock, unit_measure_id, tax_rate, is_excluded, has_discount, discount_value } = req.body
+        const { code_reference, name, description, price, categories, stock, unit_measure_id, tax_rate, is_excluded, has_discount, discount_value } = req.body
 
         const nameFiles = await uploadFile(req.files, ['png', 'jpg', 'jpeg'])
 
@@ -105,7 +115,7 @@ productCtrl.saveProducts = async (req, res) => {
 
         await db.query('BEGIN')
 
-        let product = await db.query(`INSERT INTO products (code_reference, name, price, stock, unit_measure_id,  standard_code_id, tax_rate, tribute_id, is_excluded, has_discount, discount_value) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING  id`, [code_reference, name, price, stock, unit_measure_id, 1, tax_rate, 1, is_excluded, has_discount, discount_value ])
+        let product = await db.query(`INSERT INTO products (code_reference, name, description, price, stock, unit_measure_id,  standard_code_id, tax_rate, tribute_id, is_excluded, has_discount, discount_value) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING  id`, [code_reference, name, description, price, stock, unit_measure_id, 1, tax_rate, 1, is_excluded, has_discount, has_discount == 0 ? discount_value : 0])
 
         product = product.rows[0].id
 
@@ -158,14 +168,15 @@ productCtrl.updateProducts = async (req, res) => {
         const { id } = req.params;
         const {
             name,
+            description,
             price,
             stock,
             unit_measure_id,
-            standard_code_id,
             tax_rate,
-            tribute_id,
             is_excluded,
             categories,
+            has_discount,
+            discount_value
         } = req.body;
 
         const images = JSON.parse(req.body.images)
@@ -203,21 +214,23 @@ productCtrl.updateProducts = async (req, res) => {
                 price = $2,
                 stock = $3,
                 unit_measure_id = $4,
-                standard_code_id = $5,
-                tax_rate = $6,
-                tribute_id = $7,
-                is_excluded = $8
-            WHERE id = $9
+                tax_rate = $5,
+                is_excluded = $6,
+                description = $7,
+                has_discount = $8,
+                discount_value = $9
+            WHERE id = $10
             `,
             [
                 name,
                 price,
                 stock,
                 unit_measure_id,
-                standard_code_id,
                 tax_rate,
-                tribute_id,
                 is_excluded,
+                description,
+                has_discount,
+                has_discount == 0 ? discount_value : 0,
                 id
             ]
         );
@@ -269,7 +282,7 @@ productCtrl.updateProducts = async (req, res) => {
         // INSERTAMOS LAS NUEVAS IMAGES SI HAY
         if (urlFiles && urlFiles.length > 0) {
             await client.query(
-            `
+                `
             INSERT INTO products_images (product_id, url_image, public_id)
             SELECT $1, pi.url_image, pi.public_id
             FROM jsonb_to_recordset($2::jsonb) AS pi (
@@ -282,10 +295,9 @@ productCtrl.updateProducts = async (req, res) => {
         }
 
         await client.query('COMMIT');
-
         // SI SE ELIMINARIN IMAGENES, LAS ELIMINAMOS DE CLOUDiNARY
         if (deletes && deletes.rows.length > 0) {
-            await cloudinaryService.deleteFiles(deletes);
+            let res = await cloudinaryService.deleteFiles(deletes.rows.map(row => row.imagedelete));
         }
 
         res.json({ msg: 'Producto actualizado correctamente' });

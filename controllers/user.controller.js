@@ -36,7 +36,7 @@ userCtrl.loginUsers = async (req, res) => {
         const refreshTokenFactus = response.data.refresh_token;
         const factusExpiresIn = Date.now() + response.data.expires_in * 1000;
 
-        const token = await webToken.generateJwt(user);
+        const token = await webToken.generateJwt(user);        
         const refreshToken = await webToken.generateRefreshToken(user);
 
         await db.query(
@@ -331,8 +331,9 @@ userCtrl.refreshToken = async (req, res) => {
         const payload = req.refreshPayload;
 
         const refreshToken = req.cookies.auth;
+
         const result = await db.query(
-            "SELECT refresh_token FROM users WHERE refresh_token = $1",
+            `SELECT refresh_token FROM users WHERE refresh_token = $1`,
             [refreshToken],
         );
 

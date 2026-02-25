@@ -76,23 +76,54 @@ saleCtrl.listSales = async (req, res) => {
 
 saleCtrl.generateSale = async (req, res) => {
     try {
-        let { userId, products } = req.body;
+        let { userId, products, paymentMethod } = req.body;
 
-        userId = req.user.id ? req.user : userId;
         let referenceCode = uuidv4();
+        if (userId) {
+            userId = (await db.query('SELECT * FROM users u WHERE u.id = $1', [userId])).rows[0];
+        } else {
+            userId = req.user;
+        }
+
+        let token = req.user.access_token_factus;
 
         await db.query(`BEGIN`)
 
         let sale = await db.query('INSERT INTO sales (user_id,reference_code) VALUES ($1,$2) RETURNING id', [userId.id, referenceCode]);
 
         await db.query(`
-        INSERT INTO sales_details (sale_id, product_id, quantity ,unit_price, subtotal)
-        SELECT $1, p.product_id, p.quantity, pr.price, (((pr.tax_rate / 100) * pr.price) + pr.price) * p.quantity 
+        INSERT INTO sales_details 
+            (sale_id, product_id, quantity, unit_price, subtotal, discount_value, discount_rate, tax_iva, iva_value)
+
+        SELECT 
+            $1,
+            p.product_id,
+            p.quantity,
+            pr.price,
+
+            -- TOTAL CON DESCUENTO Y CON IMPUESTOS
+            (
+                (pr.price * p.quantity) * (1 - p.discount_rate / 100.0)
+            ) * (1 + pr.tax_rate / 100.0),
+
+            -- VALOR DEL DESCUENTO
+            (pr.price * p.quantity) * (p.discount_rate / 100.0),
+
+            p.discount_rate,
+            pr.tax_rate,
+
+            (
+                (pr.price * p.quantity) * (1 - p.discount_rate / 100.0)
+            ) * (pr.tax_rate / 100.0)
+
         FROM jsonb_to_recordset($2::jsonb) AS p(
             product_id INT,
-            quantity INT
-        )  
-        LEFT JOIN products pr ON pr.id = p.product_id `, [sale.rows[0].id, JSON.stringify(products)]
+            quantity INT,
+            discount_rate NUMERIC
+        )
+        LEFT JOIN products pr ON pr.id = p.product_id
+        `,
+            [sale.rows[0].id, JSON.stringify(products)]
         )
 
         let items = await db.query(`
@@ -100,7 +131,8 @@ saleCtrl.generateSale = async (req, res) => {
 
             FROM jsonb_to_recordset($1::jsonb) AS p(
             product_id INT,
-            quantity INT)
+            quantity INT,
+            discount_rate INT)
 
             WHERE pr.id = p.product_id  
             RETURNING *
@@ -108,13 +140,14 @@ saleCtrl.generateSale = async (req, res) => {
             [JSON.stringify(products)]
         )
 
-        let urlFactus = await generateSaleWithFactus(userId, items);
+        let urlFactus = await generateSaleWithFactus(userId, token, items, paymentMethod);
 
         if (urlFactus.ok == false) {
             await db.query("ROLLBACK")
             return res.status(500).json({ msg: urlFactus })
         }
-        await db.query(`UPDATE sales SET total = (SELECT SUM(subtotal) FROM sales_details WHERE sale_id = $1), url_factus=$2 WHERE id = $1`,
+
+        await db.query(`UPDATE sales SET total = (SELECT SUM(subtotal) FROM sales_details WHERE sale_id = $1) , url_factus = $2 WHERE id = $1`,
             [sale.rows[0].id, urlFactus]
         );
         await db.query("COMMIT")
@@ -127,7 +160,7 @@ saleCtrl.generateSale = async (req, res) => {
     }
 }
 
-const generateSaleWithFactus = async (customer, items) => {
+const generateSaleWithFactus = async (customer, token, items, paymentMethod) => {
     try {
         let codeSale = uuidv4();
 
@@ -136,10 +169,10 @@ const generateSaleWithFactus = async (customer, items) => {
                 code_reference: item.code_reference,
                 name: item.name,
                 quantity: item.quantity,
-                price: item.price,
+                price: item.price + (item.price * item.tax_rate / 100),
                 tax_rate: item.tax_rate,
                 unit_measure_id: item.unit_measure_id,
-                discount_rate: 0,
+                discount_rate: item.discount_rate,
                 standard_code_id: item.standard_code_id,
                 is_excluded: item.is_excluded,
                 tribute_id: item.tribute_id,
@@ -152,11 +185,11 @@ const generateSaleWithFactus = async (customer, items) => {
             reference_code: `FACT-OJ-${codeSale}`,
             observation: "Factura de prueba",
             payment_form: "1",
-            payment_method_code: "10",
+            payment_method_code: paymentMethod,
             operation_type: "10",
             send_email: true,
             customer: {
-                identification_document_id: 3,
+                identification_document_id: customer.type_document,
                 identification: customer.document_number,
                 names: customer.first_name + " " + customer.last_name,
                 email: customer.email,
@@ -170,7 +203,7 @@ const generateSaleWithFactus = async (customer, items) => {
         }, {
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${customer.access_token}`
+                'Authorization': `Bearer ${token}`
             }
         }
         );
@@ -178,6 +211,7 @@ const generateSaleWithFactus = async (customer, items) => {
         return response.data.data.bill.public_url;
     }
     catch (error) {
+        console.log(error)
         return { ok: false, msg: "Ha ocurrido un error al generar la factura con factus." }
     }
 

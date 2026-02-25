@@ -21,7 +21,8 @@ cloudinaryService.uploadFiles = async (nameFiles) => {
         for (const fileName of nameFiles) {
             const filePath = path.join(__dirname, "../uploads/", fileName);
             const result = await cloudinary.uploader.upload(filePath, {
-                folder: '/products'
+                folder: '/products',
+                background_removal: "cloudinary_ai",
             })
             pathCloudinary.push(result)
 
@@ -44,10 +45,11 @@ cloudinaryService.deleteFiles = async (publicIds) => {
             await cloudinary.uploader.destroy(publicId)
         }
 
-        return {ok: true}
+        return { ok: true }
     }
-    catch(error) {
-        return { ok: false, msg: "Error al eliminar"}
+    catch (error) {
+        console.log(error)
+        return { ok: false, msg: "Error al eliminar" }
     }
 }
 

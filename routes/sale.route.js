@@ -15,7 +15,7 @@ routerSales.get('/listSales', [
 routerSales.post('/generateSale', [
     webToken.verifyJwt(),
     webToken.verifyJwtFactus,
-    check('user_id').optional().custom(userHelper.existUserById),
+    check('userId').optional().custom(userHelper.existUserById),
     check('products').notEmpty().withMessage('Los productos son obligatorios').bail().custom(productHelper.valideProduct)
         .isArray({ min: 1 }).withMessage('Debe haber al menos un producto en la venta'),
     valideFields

@@ -29,6 +29,7 @@ webToken.generateJwt = (user) => {
     );
   });
 };
+
 webToken.generateRefreshToken = (user) => {
   return new Promise((resolve, reject) => {
     const payload = {
@@ -95,7 +96,6 @@ webToken.verifyJwt = (rolesAllowed = ["admin"]) => {
       req.user = user.rows[0];
       next();
     } catch (error) {
-      console.error(error);
       res.status(401).json({ msg: "Token inválido o expirado" });
     }
   };
